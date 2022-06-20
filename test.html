@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>HTML 5 Boilerplate</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/luxon@2.4.0/build/global/luxon.min.js"></script>
+    <div id="agenda"></div>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <script type="text/javascript">
+      class Time {
+          isWeekDay(day) {
+              return day.weekday == 6 || day.weekday == 7
+          }
+          formatDay(day) {
+              return day.toFormat("ccc") + " " + day.toFormat("d") + " "+ day.toFormat("LLLL") + " " + day.toFormat("kkkk")
+          }
+          isDayBefore(x, y) {
+            return x.startOf("day") < y.startOf("day");
+          }
+          isSameDay(x, y) {
+              return x.startOf("day") <= y.startOf("day");
+          }
+      }
+
+      class Agenda {
+          constructor(openHour, closeHour, numDays, id) {
+              this.time = new Time();
+              this.openHour = openHour;
+              this.closeHour = closeHour;
+              this.numDays = numDays;
+              this.startDay = luxon.DateTime.now().setLocale('fr');
+              while (this.time.isWeekDay(this.startDay)) {
+                  this.startDay = this.startDay.plus({days:1})
+              }
+              this.next = true;
+              this.currentDays = this.getDays();
+              this.daysIndex = 1;
+              this.id = id;
+              this.buildDOM();
+          }
+          getDays() {
+              let i = 0
+              let next_days = []
+              let day = this.startDay 
+              let next = this.next;
+              if (this.currentDays) {
+                if (next) {
+                    day = this.currentDays[4];
+                } else {
+                    day = this.currentDays[0];
+                }    
+              }
+              while (i < 5) {
+                  if (!this.time.isWeekDay(day)) {
+                      next_days.push(day);
+                      i += 1;
+                  }
+                  day = next ? day.plus({days:1}) : day.minus({days:1});
+              }
+              this.currentDays = next ? next_days : next_days.reverse();
+              return next_days;
+          }
+          onClick(btn) {
+              if (btn == "next") {
+                  this.next = true;
+              } else {
+                  this.next = false;
+              }
+              this.update()
+          }
+          update() {
+              if (this.time.isSameDay(this.currentDays[0], this.startDay) && this.next == false) {
+                 return 
+              }
+              this.getDays();
+              let days = document.querySelectorAll(".day");
+              days.forEach(( day, i) => {
+                  day.innerHTML = this.time.formatDay(this.currentDays[i]);
+              })
+              console.log(this.currentDays[0].startOf("day"));
+              console.log(this.startDay.startOf("day"));
+              let events = Array.from(document.querySelectorAll(".event"));
+              let today_event = events.filter(( event, i ) => i == 0 || i % this.numDays == 0);
+              if (this.time.isSameDay(this.currentDays[0], this.startDay)) {
+                  today_event.forEach(ev => {
+                      ev.classList.add("today");
+                  })
+              } else {
+                  today_event.forEach(ev => {
+                      ev.classList.remove("today");
+                  })
+              }
+          }
+          printDays() {
+              agenda.currentDays.forEach(day => {
+                  console.log(this.time.formatDay(day))
+              })
+          }
+          buildDOM() {
+              let agenda = document.getElementById(this.id);
+              let body = document.createElement("table");
+              body.classList.add("agenda-body")
+
+              // BUTTON
+              let btnDiv = document.createElement("div");
+              let prev = document.createElement("button");
+              prev.innerHTML = "Précédent";
+              prev.addEventListener('click', () => {
+                  this.onClick("prev");
+              })
+              let next = document.createElement("button");
+              next.innerHTML = "Suivant";
+              next.addEventListener('click', () => {
+                  this.onClick("next")
+              })
+              btnDiv.appendChild(prev);
+              btnDiv.appendChild(next);
+              agenda.appendChild(btnDiv);
+              
+              for (let i = this.openHour; i <= this.closeHour; i++) {
+                  let tr = document.createElement("tr");
+                  for (let j = 0; j <= 5; j++) {
+                      let th = document.createElement("th");
+                      if (i == this.openHour && j == 0) {
+                          th.innerHTML = "Heure/Jour";
+                      } else if (i == this.openHour) {
+                          th.classList.add("day");
+                          th.innerHTML = this.time.formatDay(this.currentDays[j - 1]);
+                      } else if (j == 0) {
+                          th.classList.add("hour")
+                          th.innerHTML = i + " h"
+                      } else {
+                          th.classList.add("event");
+                      }
+                      if (j == 1) {
+                          th.classList.add("today");
+                      }
+                      tr.appendChild(th)
+                  }
+                  body.appendChild(tr);
+              }
+              agenda.appendChild(body);
+          }
+      }
+      let agenda = new Agenda(9, 17, 5, "agenda");
+       </script>
+    <style>
+      .today {
+          background-color: #EFFAFF;
+      }
+      .btn {
+          border: 1px solid #1363DF;
+      }
+      .active {
+          background-color: #e8e479;
+      }
+      .event:hover {
+          background-color:#E6F4F1 ;
+      }
+      #agenda {
+          width: 50%;
+      }
+      #agenda table {
+          border-spacing:0;
+          border-collapse: collapse;
+      }
+      #agenda-header {
+          display: flex;
+          justify-content: end;
+      }
+      button {
+          margin: 5px;
+          padding: 5px;
+      }
+      #agenda-body {
+          border-collapse: collapse;
+          width:100%;
+      }
+      .hour, .day {
+          background-color: #3699EC;
+          border-radius: 5px;
+      }
+      #agenda td, #agenda th {
+          padding: 5px;
+      }
+      html {
+          font-family: 'Roboto', sans-serif;
+      }
+    </style>
+  </body>
+</html>
