@@ -14,6 +14,14 @@
   </head>
   <body>
     <script type="text/javascript">
+      let events = [
+          {
+              time: "2022-06-27T09"
+          },
+          {
+              time: "2022-06-24T09"
+          }
+      ]
       class Time {
           isWeekDay(day) {
               return day.weekday == 6 || day.weekday == 7
@@ -27,10 +35,13 @@
           isSameDay(x, y) {
               return x.startOf("day") <= y.startOf("day");
           }
+          isBetween(day, x, y) {
+              return x.startOf("day") <= day.startOf("day") && day.startOf("day") <= y.startOf("day");
+          }
       }
 
       class Agenda {
-          constructor(openHour, closeHour, numDays, id) {
+          constructor(openHour, closeHour, numDays, id, events) {
               this.time = new Time();
               this.openHour = openHour;
               this.closeHour = closeHour;
@@ -41,8 +52,10 @@
               }
               this.next = true;
               this.currentDays = this.getDays();
+              console.log(this.currentDays);
               this.daysIndex = 1;
               this.id = id;
+              this.events = events.map(ev => luxon.DateTime.fromISO(ev.time).setLocale("fr"));
               this.buildDOM();
           }
           getDays() {
@@ -75,6 +88,9 @@
               }
               this.update()
           }
+          currentEvents() {
+              return this.events.filter(ev => this.time.isBetween(ev, this.currentDays[0], this.currentDays[4]))
+          }
           update() {
               if (this.time.isSameDay(this.currentDays[0], this.startDay) && this.next == false) {
                  return 
@@ -84,8 +100,6 @@
               days.forEach(( day, i) => {
                   day.innerHTML = this.time.formatDay(this.currentDays[i]);
               })
-              console.log(this.currentDays[0].startOf("day"));
-              console.log(this.startDay.startOf("day"));
               let events = Array.from(document.querySelectorAll(".event"));
               let today_event = events.filter(( event, i ) => i == 0 || i % this.numDays == 0);
               if (this.time.isSameDay(this.currentDays[0], this.startDay)) {
@@ -97,11 +111,6 @@
                       ev.classList.remove("today");
                   })
               }
-          }
-          printDays() {
-              agenda.currentDays.forEach(day => {
-                  console.log(this.time.formatDay(day))
-              })
           }
           buildDOM() {
               let agenda = document.getElementById(this.id);
@@ -127,6 +136,10 @@
               for (let i = this.openHour; i <= this.closeHour; i++) {
                   let tr = document.createElement("tr");
                   for (let j = 0; j <= 5; j++) {
+                      if (j > 0) {
+                          let dayEvent = this.currentEvents().filter(ev  => ev.c.hour == i && ev.c.day == this.currentDays[j - 1].c.day );
+                          console.log(dayEvent);
+                      }
                       let th = document.createElement("th");
                       if (i == this.openHour && j == 0) {
                           th.innerHTML = "Heure/Jour";
@@ -149,7 +162,7 @@
               agenda.appendChild(body);
           }
       }
-      let agenda = new Agenda(9, 17, 5, "agenda");
+      let agenda = new Agenda(9, 17, 5, "agenda", events);
        </script>
     <style>
       .today {
