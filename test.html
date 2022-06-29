@@ -1,210 +1,549 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>HTML 5 Boilerplate</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/luxon@2.4.0/build/global/luxon.min.js"></script>
-    <div id="agenda"></div>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <div class="reservation">
+      <div id="agenda"><h2 class="header">Slot Racing System</h2></div>
+      <div class="form-container">
+        <h2>Demande de réservation</h2>
+        <div class="form">
+          <form action="" style="display: flex; flex-direction: column">
+            <label>Prénom :</label>
+            <input id="fname" type="text" />
+            <p id="fname-error" class="error"></p>
+            <label>Nom :</label>
+            <input id="lname" type="text" />
+            <p id="lname-error" class="error"></p>
+            <label for="email">Email :</label>
+            <input id="email" type="email" name="email" />
+            <p id="email-error" class="error"></p>
+            <label type="text">Téléphone :</label>
+            <input id="phone" type="text" name="tel" />
+            <p id="phone-error" class="error"></p>
+            <label>Nombre de personnes :</label>
+            <input
+              id="person_number"
+              type="number"
+              value="6"
+              min="6"
+              max="16"
+            />
+            <p id="form-error" class="error"></p>
+            <button type="button" onclick="getValuesForm()">Envoyer</button>
+          </form>
+          <p id="date"></p>
+        </div>
+      </div>
+    </div>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <script type="text/javascript">
-      let events = [
-          {
-              time: "2022-06-27T09"
+      function errorInput(e, match, errorMsg) {
+        if (match) {
+          if (e.target.classList.contains("border-red"))
+            e.target.classList.remove("border-red");
+        } else {
+          if (!e.target.classList.contains("border-red")) {
+            e.target.classList.add("border-red");
+          }
+        }
+        let errNode = document.getElementById(e.target.id + "-error");
+        if (errorMsg && !match) {
+          errNode.innerHTML = errorMsg;
+        } else {
+          errNode.innerHTML = "";
+        }
+      }
+      class Validator {
+        isAlphaOnly(value) {
+          return value.match(/^[A-Za-z-éè]{2,20}$/);
+        }
+        isEmail(value) {
+          return value.match(
+            /^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$/
+          );
+        }
+        isPhone(value) {
+          return value.match(/^[0-9]{10}$/);
+        }
+      }
+
+      let validator = new Validator();
+      let fname = document.getElementById("fname");
+      let lname = document.getElementById("lname");
+      let email = document.getElementById("email");
+      let phone = document.getElementById("phone");
+      fname.oninput = (e) => {
+        let match = validator.isAlphaOnly(e.target.value);
+        errorInput(e, match, "Le champ doit contenir entre 2 et 20 lettres");
+      };
+      lname.oninput = (e) => {
+        let match = validator.isAlphaOnly(e.target.value);
+        errorInput(e, match, "Le champ doit contenir entre 2 et 20 lettres");
+      };
+      email.oninput = (e) => {
+        let match = validator.isEmail(e.target.value);
+        errorInput(e, match, "L'email est invalide. Ex: exemple@exemple.fr");
+      };
+      phone.oninput = (e) => {
+        let match = validator.isPhone(e.target.value);
+        errorInput(e, match, "Le numéro doit contenir 10 chiffres");
+      };
+
+      let agenda;
+      let bookings;
+      let closed_days;
+      fetch("http://localhost:3000/booking", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => {
+          return res.json();
+        })
+        .then((res) => {
+          bookings = res.bookings;
+          closedDays = res.closed_days;
+          console.log(bookings);
+          agenda = new Agenda(9, 24, 5, "agenda", bookings, closedDays);
+        });
+
+      function send(obj) {
+        fetch("http://localhost:3000/booking", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          {
-              time: "2022-06-24T09"
-          }
-      ]
+          body: JSON.stringify(obj),
+        })
+          .then((res) => {
+            return res.json();
+          })
+          .then((res) => {});
+      }
+
+      function getValuesForm() {
+        let fname = document.getElementById("fname").value;
+        let lname = document.getElementById("lname").value;
+        let tel = document.getElementById("phone").value;
+        let email = document.getElementById("email").value;
+        let nb_person = document.getElementById("person_number").value;
+        if (
+          validator.isAlphaOnly(fname) &&
+          validator.isAlphaOnly(lname) &&
+          validator.isPhone(tel) &&
+          validator.isEmail(email)
+        ) {
+          let events = agenda.getSelectedEvent();
+          let obj = {
+            fname,
+            lname,
+            email,
+            tel,
+            nb_person,
+            events,
+          };
+          send(obj);
+        } else {
+          let errorForm = document.getElementById("form-error");
+          errorForm.innerHTML = "Certains champs sont invalides.";
+        }
+      }
       class Time {
-          isWeekDay(day) {
-              return day.weekday == 6 || day.weekday == 7
-          }
-          formatDay(day) {
-              return day.toFormat("ccc") + " " + day.toFormat("d") + " "+ day.toFormat("LLLL") + " " + day.toFormat("kkkk")
-          }
-          isDayBefore(x, y) {
-            return x.startOf("day") < y.startOf("day");
-          }
-          isSameDay(x, y) {
-              return x.startOf("day") <= y.startOf("day");
-          }
-          isBetween(day, x, y) {
-              return x.startOf("day") <= day.startOf("day") && day.startOf("day") <= y.startOf("day");
-          }
+        isWeekDay(day) {
+          return day.weekday == 6 || day.weekday == 7;
+        }
+        formatDay(day) {
+          return (
+            day.toFormat("ccc") +
+            " " +
+            day.toFormat("d") +
+            " " +
+            day.toFormat("LLLL") +
+            " " +
+            day.toFormat("kkkk")
+          );
+        }
+        isDayBefore(x, y) {
+          return x.startOf("day") < y.startOf("day");
+        }
+        isSameDay(x, y) {
+          return x.startOf("day") <= y.startOf("day");
+        }
+        isBetween(day, x, y) {
+          return (
+            x.startOf("day") <= day.startOf("day") &&
+            day.startOf("day") <= y.startOf("day")
+          );
+        }
       }
 
       class Agenda {
-          constructor(openHour, closeHour, numDays, id, events) {
-              this.time = new Time();
-              this.openHour = openHour;
-              this.closeHour = closeHour;
-              this.numDays = numDays;
-              this.startDay = luxon.DateTime.now().setLocale('fr');
-              while (this.time.isWeekDay(this.startDay)) {
-                  this.startDay = this.startDay.plus({days:1})
-              }
-              this.next = true;
-              this.currentDays = this.getDays();
-              console.log(this.currentDays);
-              this.daysIndex = 1;
-              this.id = id;
-              this.events = events.map(ev => luxon.DateTime.fromISO(ev.time).setLocale("fr"));
-              this.buildDOM();
+        constructor(openHour, closeHour, numDays, id, events, closedDays) {
+          this.time = new Time();
+          this.openHour = openHour;
+          this.closeHour = closeHour;
+          this.numDays = numDays;
+          this.startDay = luxon.DateTime.now()
+            .setLocale("fr")
+            .plus({ days: 4 });
+          this.closedDays = closedDays;
+          this.currentDays = this.getDays(true);
+          this.id = id;
+          this.events = events;
+          this.events = this.events.map((ev) => luxon.DateTime.fromISO(ev));
+          console.log(this.events);
+          this.buildDOM();
+        }
+        getDays(next) {
+          let i = 0;
+          let next_days = [];
+          let day = this.startDay;
+          if (this.currentDays) {
+            if (next) {
+              day = this.currentDays[4];
+            } else {
+              day = this.currentDays[0];
+            }
           }
-          getDays() {
-              let i = 0
-              let next_days = []
-              let day = this.startDay 
-              let next = this.next;
-              if (this.currentDays) {
-                if (next) {
-                    day = this.currentDays[4];
-                } else {
-                    day = this.currentDays[0];
-                }    
-              }
-              while (i < 5) {
-                  if (!this.time.isWeekDay(day)) {
-                      next_days.push(day);
-                      i += 1;
-                  }
-                  day = next ? day.plus({days:1}) : day.minus({days:1});
-              }
-              this.currentDays = next ? next_days : next_days.reverse();
-              return next_days;
+          while (i < 5) {
+            if (!this.closedDays.includes(day.startOf("day").toISO())) {
+              next_days.push(day);
+              i += 1;
+            }
+            day = next ? day.plus({ days: 1 }) : day.minus({ days: 1 });
           }
-          onClick(btn) {
-              if (btn == "next") {
-                  this.next = true;
-              } else {
-                  this.next = false;
-              }
-              this.update()
-          }
-          currentEvents() {
-              return this.events.filter(ev => this.time.isBetween(ev, this.currentDays[0], this.currentDays[4]))
-          }
-          update() {
-              if (this.time.isSameDay(this.currentDays[0], this.startDay) && this.next == false) {
-                 return 
-              }
-              this.getDays();
-              let days = document.querySelectorAll(".day");
-              days.forEach(( day, i) => {
-                  day.innerHTML = this.time.formatDay(this.currentDays[i]);
+          this.currentDays = next ? next_days : next_days.reverse();
+          return next_days;
+        }
+        getSelectedEvent() {
+          let eventsNode = document.querySelectorAll(".active");
+          let events = [];
+          eventsNode.forEach((ev) => {
+            events.push(
+              luxon.DateTime.fromISO(ev.getAttribute("datetime"), {
+                zone: "Europe/Paris",
               })
-              let events = Array.from(document.querySelectorAll(".event"));
-              let today_event = events.filter(( event, i ) => i == 0 || i % this.numDays == 0);
-              if (this.time.isSameDay(this.currentDays[0], this.startDay)) {
-                  today_event.forEach(ev => {
-                      ev.classList.add("today");
-                  })
-              } else {
-                  today_event.forEach(ev => {
-                      ev.classList.remove("today");
-                  })
+            );
+          });
+          events.sort((a, b) => (a.toMillis() > b.toMillis() ? 1 : -1));
+          return events;
+        }
+        currentEvents() {
+          return this.events.filter((ev) =>
+            this.time.isBetween(ev, this.currentDays[0], this.currentDays[4])
+          );
+        }
+        clickEvent = (e) => {
+          let parent = document.querySelectorAll(".event");
+          let index = Array.prototype.indexOf.call(parent, e.target);
+          let person = document.getElementById("person_number");
+          if (!e.target.classList.contains("active")) {
+            e.target.classList.add("active");
+          } else {
+            e.target.classList.remove("active");
+            console.log(date)
+            Array.from(date.children).forEach(dt => {
+              console.log(dt)
+              if (dt.getAttribute("data-id") && dt.getAttribute("data-id") == index) {
+                date.removeChild(dt)
               }
-          }
-          buildDOM() {
-              let agenda = document.getElementById(this.id);
-              let body = document.createElement("table");
-              body.classList.add("agenda-body")
+            })
 
-              // BUTTON
-              let btnDiv = document.createElement("div");
-              let prev = document.createElement("button");
-              prev.innerHTML = "Précédent";
-              prev.addEventListener('click', () => {
-                  this.onClick("prev");
-              })
-              let next = document.createElement("button");
-              next.innerHTML = "Suivant";
-              next.addEventListener('click', () => {
-                  this.onClick("next")
-              })
-              btnDiv.appendChild(prev);
-              btnDiv.appendChild(next);
-              agenda.appendChild(btnDiv);
-              
-              for (let i = this.openHour; i <= this.closeHour; i++) {
-                  let tr = document.createElement("tr");
-                  for (let j = 0; j <= 5; j++) {
-                      if (j > 0) {
-                          let dayEvent = this.currentEvents().filter(ev  => ev.c.hour == i && ev.c.day == this.currentDays[j - 1].c.day );
-                          console.log(dayEvent);
-                      }
-                      let th = document.createElement("th");
-                      if (i == this.openHour && j == 0) {
-                          th.innerHTML = "Heure/Jour";
-                      } else if (i == this.openHour) {
-                          th.classList.add("day");
-                          th.innerHTML = this.time.formatDay(this.currentDays[j - 1]);
-                      } else if (j == 0) {
-                          th.classList.add("hour")
-                          th.innerHTML = i + " h"
-                      } else {
-                          th.classList.add("event");
-                      }
-                      if (j == 1) {
-                          th.classList.add("today");
-                      }
-                      tr.appendChild(th)
-                  }
-                  body.appendChild(tr);
-              }
-              agenda.appendChild(body);
+            return
           }
+          let selectedEvent = this.getSelectedEvent().at(-1);
+          let p = document.createElement("p");
+          let span = document.createElement("button");
+          span.innerHTML = "X";
+          p.setAttribute("data-id", index);
+          p.classList.add("date");
+          span.onclick = (e) => {
+            let id = e.target.parentNode.getAttribute("data-id")
+            let event = parent[id];
+            event.classList.remove("active");
+            date.removeChild(p);
+          };
+          p.innerHTML = selectedEvent.toLocaleString(
+            luxon.DateTime.DATETIME_MED
+          );
+          p.appendChild(span);
+          date.appendChild(p);
+          e.target.setAttribute("data-id", date.children.length - 1)
+        };
+        update(next) {
+          if (
+            this.time.isSameDay(this.currentDays[0], this.startDay) &&
+            next == false
+          ) {
+            return;
+          }
+          this.getDays(next);
+          let days = document.querySelectorAll(".day");
+          days.forEach((day, i) => {
+            day.innerHTML = this.time.formatDay(this.currentDays[i]);
+          });
+          let events = Array.from(document.querySelectorAll(".event"));
+          let x = 0;
+          events.forEach((ev, i) => {
+            ev.innerHTML = "";
+            ev.classList.remove("closed");
+            ev.classList.remove("active");
+            let y = Math.floor(i / this.numDays);
+            let currentEvents = this.currentEvents();
+            let hour = this.openHour + y;
+            let closed = hour >= 12 && hour < 14;
+            let formatHour = hour < 10 ? "0" + hour : hour;
+            ev.setAttribute(
+              "datetime",
+              this.currentDays[x].toFormat("yyyy-MM-dd") + "T" + formatHour
+            );
+            let event = currentEvents.find(
+              (ev) =>
+                ev.c.day == this.currentDays[x].c.day &&
+                ev.c.hour == hour
+            );
+           // let selectedEvents = this.getSelectedEvent();
+           // let selectEvent = selectedEvents.find(
+           //   (ev) =>
+           //     ev.c.day == this.currentDays[x].c.day &&
+           //     ev.c.hour == hour
+           // )
+           // console.log(selectEvent)
+           // if (selectEvent) {
+           //   ev.classList.add("active");
+           // }
+            if (event || closed) {
+              if (event) {
+                ev.innerHTML = "Complet";
+              }
+              ev.classList.add("closed");
+              ev.removeEventListener("click", this.clickEvent);
+            } else {
+              ev.addEventListener("click", this.clickEvent);
+            }
+            if (x == 4) {
+              x = 0;
+            } else {
+              x += 1;
+            }
+          });
+        }
+        buildDOM() {
+          let agenda = document.getElementById(this.id);
+          let body = document.createElement("table");
+          body.classList.add("agenda-body");
+
+          // BUTTON
+          let btnDiv = document.createElement("div");
+          btnDiv.classList.add("btns");
+          let prev = document.createElement("button");
+          prev.innerHTML = "Précédent";
+          prev.addEventListener("click", () => {
+            this.update(false);
+          });
+          let next = document.createElement("button");
+          next.innerHTML = "Suivant";
+          next.addEventListener("click", () => {
+            this.update(true);
+          });
+          btnDiv.appendChild(prev);
+          btnDiv.appendChild(next);
+          agenda.appendChild(btnDiv);
+
+          let day_tr = document.createElement("tr");
+          let th = document.createElement("th");
+          th.innerHTML = "Heure/Jour";
+          th.classList.add("hour");
+          day_tr.appendChild(th);
+          for (let i = 0; i < this.numDays; i++) {
+            let new_th = document.createElement("th");
+            new_th.innerHTML = this.time.formatDay(this.currentDays[i]);
+            new_th.classList.add("day");
+            day_tr.appendChild(new_th);
+          }
+          body.appendChild(day_tr);
+          for (let i = this.openHour; i < this.closeHour; i++) {
+            let new_tr = document.createElement("tr");
+            for (let j = -1; j < 5; j++) {
+              let new_th = document.createElement("th");
+              let closed = j > -1 && i >= 12 && i < 14;
+              if (j == -1) {
+                new_th.classList.add("hour");
+                new_th.innerHTML = i + " h";
+              } else {
+                new_th.setAttribute(
+                  "datetime",
+                  this.currentDays[j].toISODate() + "T" + (i < 10 ? "0" + i : i)
+                );
+                let currentEvents = this.currentEvents();
+                let event = currentEvents.find(
+                  (ev) =>
+                    ev.c.day == this.currentDays[j].c.day && ev.c.hour == i
+                );
+                let date = document.getElementById("date");
+                if (event || closed) {
+                  new_th.classList.add("event");
+                  if (event) {
+                    new_th.innerHTML = "Complet";
+                  }
+                  new_th.classList.add("closed");
+                } else {
+                  new_th.classList.add("event");
+                  new_th.classList.add("open");
+                  new_th.addEventListener("click", this.clickEvent);
+                }
+              }
+              new_tr.appendChild(new_th);
+            }
+            body.appendChild(new_tr);
+          }
+          agenda.appendChild(body);
+        }
       }
-      let agenda = new Agenda(9, 17, 5, "agenda", events);
-       </script>
+    </script>
     <style>
-      .today {
-          background-color: #EFFAFF;
+      .closed {
+        background-color: #b4b9c2;
+        color: #c73a1e;
+      }
+      .form-container {
+        width: 50%;
+      }
+      .form-container h2 {
+        text-align: center;
+      }
+      .form {
+        display: flex;
+      }
+      .form form {
+        margin-top: 2%;
+        width: 33%;
+      }
+      .form #date {
+        margin-left: 5%;
+      }
+      .reservation {
+        display: flex;
+      }
+      .reservation form {
+        margin-left: 5%;
+      }
+      .reservation form h2 {
+        margin-bottom: 15%;
+      }
+      .reservation input {
+        padding: 2px;
+        border-radius: 2px;
+      }
+      .black {
+        background-color: black;
+      }
+      .green {
+        background-color: #7fdb76;
+      }
+      .orange {
+        background-color: #f7bf7e;
       }
       .btn {
-          border: 1px solid #1363DF;
+        border: 1px solid #1363df;
       }
       .active {
-          background-color: #e8e479;
+        background-color: #e6f4f1;
       }
       .event:hover {
-          background-color:#E6F4F1 ;
+        transition: 0.2s;
       }
       #agenda {
-          width: 50%;
+        width: 50%;
+        opacity: 1;
+      }
+      .agenda-body {
+        background-image: url("./background.webp");
+        background-size: cover;
+        background-position: center;
       }
       #agenda table {
-          border-spacing:0;
-          border-collapse: collapse;
+        position: relative;
+        border-spacing: 0;
+        border-collapse: collapse;
       }
+      .agenda-body:before {
+        content: "";
+        position: absolute;
+        background-color: white;
+        right: 0px;
+        bottom: 0px;
+        left: 0px;
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+
       #agenda-header {
-          display: flex;
-          justify-content: end;
+        display: flex;
+        justify-content: end;
+      }
+      #agenda td,
+      #agenda tr,
+      #agenda th,
+      .hour {
+        width: 10%;
+        height: 10%;
       }
       button {
-          margin: 5px;
-          padding: 5px;
+        margin: 5px;
+        padding: 5px;
+        background-color: white;
+        border: 1px solid black;
       }
       #agenda-body {
-          border-collapse: collapse;
-          width:100%;
+        border-collapse: collapse;
+        width: 100%;
       }
-      .hour, .day {
-          background-color: #3699EC;
-          border-radius: 5px;
+      .hour,
+      .day {
+        background-color: #3699ec;
+        height: 10px;
       }
-      #agenda td, #agenda th {
-          padding: 5px;
+      #agenda td,
+      #agenda th {
+        padding: 5px;
+        border-spacing: 0;
+        border-collapse: collapse;
+        border: 1px solid #898b8c;
       }
       html {
-          font-family: 'Roboto', sans-serif;
+        font-family: "Roboto", sans-serif;
+      }
+      .header {
+        text-align: center;
+      }
+      .btns {
+        display: flex;
+        justify-content: end;
+      }
+      .border-red {
+        border: 1px solid red;
+      }
+      input {
+        border: 1px solid black;
+        outline: none;
+      }
+      .error {
+        color: red;
+        margin-bottom: 5px;
+        font-size: 14px;
       }
     </style>
   </body>
