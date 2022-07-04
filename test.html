@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/luxon@2.4.0/build/global/luxon.min.js"></script>
     <div class="reservation">
-      <div id="agenda"><h2 class="header">Slot Racing System</h2></div>
+      <div id="agenda"><h2 class="header">Slot Racing System</h2><div class="spinner"></div></div>
       <div class="form-container">
         <h2>Demande de réservation</h2>
         <div class="form">
@@ -121,6 +121,8 @@
         });
 
       function send(obj) {
+        let form = document.querySelector(".form");
+        let parent = form.parentNode;
         fetch("http://localhost:3000/booking", {
           method: "POST",
           headers: {
@@ -129,9 +131,17 @@
           body: JSON.stringify(obj),
         })
           .then((res) => {
+            if (res.status == 200) {
+              parent.removeChild(form);
+            }
             return res.json();
           })
-          .then((res) => {});
+          .then((res) => {
+            let p = document.createElement("p");
+            p.classList.add("conf-msg");
+            p.innerHTML = res.message + ". Vous recevrez un mail de confirmation quand nous l'aurons validé";
+            parent.appendChild(p);
+          });
       }
 
       function getValuesForm() {
@@ -147,6 +157,10 @@
           validator.isEmail(email)
         ) {
           let events = agenda.getSelectedEvent();
+          let isoEvents = []
+          events.forEach(ev => {
+            isoEvents.push(ev.toISO())
+          })
           let obj = {
             fname,
             lname,
@@ -276,12 +290,14 @@
             event.classList.remove("active");
             date.removeChild(p);
           };
-          p.innerHTML = selectedEvent.toLocaleString(
+          p.innerHTML = luxon.DateTime.fromISO(e.target.getAttribute("datetime")).toLocaleString(
             luxon.DateTime.DATETIME_MED
           );
+          let DT = luxon.DateTime;
           p.appendChild(span);
           date.appendChild(p);
-          e.target.setAttribute("data-id", date.children.length - 1)
+          e.target.setAttribute("data-id", date.children.length - 1);
+          //[...date.children].sort((a, b) => DT.fromISO(a.getAttribute("datetime")).toMillis() > DT.fromISO(b.getAttribute("datetime")).toMillis() ? 1:  -1).forEach(node=>date.appendChild(node));
         };
         update(next) {
           if (
@@ -343,6 +359,7 @@
         }
         buildDOM() {
           let agenda = document.getElementById(this.id);
+          agenda.removeChild(document.querySelector(".spinner"))
           let body = document.createElement("table");
           body.classList.add("agenda-body");
 
@@ -415,12 +432,16 @@
       }
     </script>
     <style>
+      .conf-msg {
+          text-align:center;
+          font-size: 15px;
+      }
       .closed {
         background-color: #b4b9c2;
         color: #c73a1e;
       }
       .form-container {
-        width: 50%;
+        width: 100%;
       }
       .form-container h2 {
         text-align: center;
@@ -430,13 +451,14 @@
       }
       .form form {
         margin-top: 2%;
-        width: 33%;
+        width: 40%;
       }
       .form #date {
         margin-left: 5%;
       }
       .reservation {
         display: flex;
+        flex-direction: column;
       }
       .reservation form {
         margin-left: 5%;
@@ -467,8 +489,8 @@
         transition: 0.2s;
       }
       #agenda {
-        width: 50%;
-        opacity: 1;
+        width: 100%;
+        opacity: 1
       }
       .agenda-body {
         background-image: url("./background.webp");
@@ -480,16 +502,6 @@
         border-spacing: 0;
         border-collapse: collapse;
       }
-      .agenda-body:before {
-        content: "";
-        position: absolute;
-        background-color: white;
-        right: 0px;
-        bottom: 0px;
-        left: 0px;
-        background-color: rgba(0, 0, 0, 0.1);
-      }
-
       #agenda-header {
         display: flex;
         justify-content: end;
@@ -545,6 +557,35 @@
         margin-bottom: 5px;
         font-size: 14px;
       }
+     
+
+     @keyframes spinner {
+     to {transform: rotate(360deg);}
+     }
+     .spinner:before {
+     content: '';
+     box-sizing: border-box;
+     position: absolute;
+     width: 50px;
+     height: 50px;
+     left: 23%;
+     top: 23%;
+     border-radius: 50%;
+     border: 2px solid #ccc;
+     border-top-color: #000;
+     animation: spinner .6s linear infinite;
+     }
+     @media (min-width: 790px) {
+         .reservation {
+             flex-direction: row;
+         }
+         #agenda {
+             width: 50%
+         }
+         .form-container {
+             width: 50%;
+         }
+     }
     </style>
   </body>
 </html>

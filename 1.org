@@ -1,0 +1,6 @@
+AGENDA ~*~ mode:org ~*~
+#+TAGS: { @OFFICE(o) @HOME(h)} COMPUTER(c) PHONE(p) READING(r)
+** Call Fre<2022-06-30 jeu.>d 
+** DONE buy airplane                                                :@OFFICE:
+
+

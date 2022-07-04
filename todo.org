@@ -1,0 +1,6 @@
+**** DONE Gérer les emails, confirmation, rappel
+**** TODO Mettre message après avoir envoyé formulaire
+**** TODO Ajouter prix/personne     
+**** TODO Clean code     
+**** TODO Préparer le code pour l'agence
+**** TODO Ecrire post indiehacker
